@@ -1,0 +1,156 @@
+<html>
+<head><title>Thinking Recovery</title></head>
+<body>
+  <div x-data>
+    <template x-if="config">
+      <div>
+        <div class="section-title">Thinking Recovery</div>
+        <div class="section-description">
+          Recover partial reasoning from interrupted LLM attempts so the agent
+          continues instead of starting over.
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Enabled</div>
+            <div class="field-description">
+              Capture reasoning/response streams and re-inject them after failures.
+            </div>
+          </div>
+          <div class="field-control">
+            <label class="toggle">
+              <input type="checkbox" x-model="config.enabled"
+                x-init="if (config.enabled == null) config.enabled = true">
+              <span class="toggler"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Recovery mode</div>
+            <div class="field-description" x-show="config.mode === 'excerpt'">
+              Deterministic head+tail excerpt of the partial stream. Fast, free, no extra calls.
+            </div>
+            <div class="field-description" x-show="config.mode === 'utility'">
+              Utility Model distills the partial stream into a dense handoff brief;
+              falls back to excerpt on timeout or error.
+            </div>
+          </div>
+          <div class="field-control">
+            <select x-model="config.mode"
+              x-init="if (!['excerpt', 'utility'].includes(config.mode)) config.mode = 'excerpt'">
+              <option value="excerpt">Excerpt (deterministic)</option>
+              <option value="utility">Utility Model digest</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Max injected tokens</div>
+            <div class="field-description">Upper bound for the recovery block added to context.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="100" max="2000" step="50"
+              x-model.number="config.max_inject_tokens"
+              x-init="if (config.max_inject_tokens == null) config.max_inject_tokens = 400">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Minimum recoverable characters</div>
+            <div class="field-description">Skip recovery when the captured fragment is tiny.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="0" max="5000" step="50"
+              x-model.number="config.min_recover_chars"
+              x-init="if (config.min_recover_chars == null) config.min_recover_chars = 200">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Max staleness (minutes)</div>
+            <div class="field-description">Discard buffers older than this; 0 disables staleness checks.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="0" max="1440" step="5"
+              x-model.number="config.max_staleness_minutes"
+              x-init="if (config.max_staleness_minutes == null) config.max_staleness_minutes = 30">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Recover across tasks</div>
+            <div class="field-description">
+              When off, unfinished buffers are dropped as soon as a new user message arrives.
+            </div>
+          </div>
+          <div class="field-control">
+            <label class="toggle">
+              <input type="checkbox" x-model="config.recover_across_tasks"
+                x-init="if (config.recover_across_tasks == null) config.recover_across_tasks = true">
+              <span class="toggler"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Disk sidecar</div>
+            <div class="field-description">
+              Persist throttled snapshots under tmp/thinking_recovery so recovery survives restarts.
+            </div>
+          </div>
+          <div class="field-control">
+            <label class="toggle">
+              <input type="checkbox" x-model="config.sidecar_enabled"
+                x-init="if (config.sidecar_enabled == null) config.sidecar_enabled = true">
+              <span class="toggler"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field" x-show="config.mode === 'utility'" x-transition>
+          <div class="field-label">
+            <div class="field-title">Utility timeout (seconds)</div>
+            <div class="field-description">Digest calls longer than this fall back to the excerpt.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="5" max="120" step="1"
+              x-model.number="config.utility_timeout_seconds"
+              x-init="if (config.utility_timeout_seconds == null) config.utility_timeout_seconds = 20">
+          </div>
+        </div>
+
+        <div class="field" x-show="config.mode === 'utility'" x-transition>
+          <div class="field-label">
+            <div class="field-title">Utility input cap (characters)</div>
+            <div class="field-description">Larger streams are pre-excerpted before the digest call.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="1000" max="60000" step="1000"
+              x-model.number="config.utility_max_input_chars"
+              x-init="if (config.utility_max_input_chars == null) config.utility_max_input_chars = 12000">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Sidecar retention (days)</div>
+            <div class="field-description">Older snapshot files are removed by the maintenance script.</div>
+          </div>
+          <div class="field-control">
+            <input type="number" min="1" max="90" step="1"
+              x-model.number="config.state_ttl_days"
+              x-init="if (config.state_ttl_days == null) config.state_ttl_days = 7">
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

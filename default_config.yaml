@@ -1,0 +1,10 @@
+enabled: true
+mode: excerpt
+max_inject_tokens: 400
+min_recover_chars: 200
+max_staleness_minutes: 30
+recover_across_tasks: true
+sidecar_enabled: true
+utility_timeout_seconds: 20
+utility_max_input_chars: 12000
+state_ttl_days: 7
